@@ -1,0 +1,46 @@
+#!/usr/bin/env ruby
+#
+# simplehttpd - simple HTTP server to glance local files.
+#
+# usage:
+#   simplehttpd [-p PORT] [-d DOCUMENT_ROOT]
+#
+
+port = 8888
+docroot = '.'
+PROG_NAME = File.basename($0)
+
+require 'optparse'
+opts = OptionParser.new do |opts|
+  opts.on('-p PORT', '--port=PORT', Integer) do |val|
+    port = val
+  end
+
+  opts.on('-d DOCUMENT_ROOT', '--document-root=DOCUMENT_ROOT') do |val|
+    docroot = val
+
+    if !File.exist?(docroot)
+      abort "#{PROG_NAME}: #{docroot}: No such directory."
+    elsif !File.directory?(docroot)
+      abort "#{PROG_NAME}: #{docroot} is not a directory."
+    end
+  end
+end
+
+begin
+  opts.parse!(ARGV)
+rescue OptionParser::InvalidArgument => e
+  case e.args[0]
+  when '-p', '--port'
+    abort "#{PROG_NAME}: Port must be an integer."
+  end
+rescue OptionParser::ParseError => e
+  abort "#{PROG_NAME}: #{e.to_s}\n" +
+    "#{PROG_NAME}: Try `#{PROG_NAME} --help' for more information."
+end
+
+
+require 'webrick'
+s = WEBrick::HTTPServer.new(:Port => port, :DocumentRoot => docroot)
+trap("INT"){ s.shutdown }
+s.start
